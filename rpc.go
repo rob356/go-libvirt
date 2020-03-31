@@ -67,6 +67,9 @@ const (
 	// StatusContinue is only used for streams.
 	// This indicates that further data packets will be following.
 	StatusContinue
+
+	// StatusDisconnect is used when the connection is disconnected.
+	StatusDisconnect
 )
 
 // header is a libvirt rpc packet header
@@ -317,6 +320,7 @@ func (l *Libvirt) deregisterAll() {
 	l.cm.Lock()
 	for id := range l.callbacks {
 		// can't call deregister() here because we're already holding the lock.
+		l.callbacks[id]<-response{Status:StatusDisconnect}
 		close(l.callbacks[id])
 		delete(l.callbacks, id)
 	}
@@ -472,6 +476,8 @@ func (l *Libvirt) getResponse(c chan response) (response, error) {
 	resp := <-c
 	if resp.Status == StatusError {
 		return resp, decodeError(resp.Payload)
+	} else if resp.Status == StatusDisconnect {
+		return resp, errors.New("disconnected")
 	}
 
 	return resp, nil
