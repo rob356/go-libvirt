@@ -132,16 +132,7 @@ func (l *Libvirt) Connect() error {
 // Disconnect shuts down communication with the libvirt server and closes the
 // underlying net.Conn.
 func (l *Libvirt) Disconnect() error {
-	// close event streams
-	for id := range l.events {
-		if err := l.removeStream(id); err != nil {
-			return err
-		}
-	}
-
-	// Deregister all the callbacks so that clients with outstanding requests
-	// will unblock.
-	l.deregisterAll()
+	l.cleanupWaiters()
 
 	_, err := l.request(constants.ProcConnectClose, constants.Program, nil)
 	if err != nil {
