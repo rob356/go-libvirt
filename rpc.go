@@ -481,7 +481,10 @@ func (l *Libvirt) sendPacket(serial uint32, proc uint32, program uint32, payload
 }
 
 func (l *Libvirt) getResponse(c chan response) (response, error) {
-	resp := <-c
+	resp, ok := <-c
+	if !ok {
+		return resp, errors.New("disconnected")
+	}
 	if resp.Status == StatusError {
 		return resp, decodeError(resp.Payload)
 	}
